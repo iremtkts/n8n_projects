@@ -1,0 +1,194 @@
+{
+  "name": "Haftalık Haber Bülteni",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                4
+              ],
+              "triggerAtHour": 20,
+              "triggerAtMinute": 44
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        -32
+      ],
+      "id": "e43f3ae7-3369-4206-bb5e-f731d01dc0f0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://example.com/replace-with-your-feed-url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        -32
+      ],
+      "id": "442769b9-b066-48f3-8d91-5dd228550161",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Aşağıda RSS kaynaklarından toplanmış haberler bulunmaktadır:\n\n{{ JSON.stringify($json.articles) }}\n\nBu haberleri analiz et ve haftalık bir haber bülteni hazırla.",
+        "options": {
+          "systemMessage": "Sen profesyonel bir haber editörü ve haftalık bülten hazırlama asistanısın.\n\nGörevin, sana verilen RSS haberlerini analiz ederek Türkçe bir haftalık haber bülteni oluşturmaktır.\n\nKurallar:\n\n1. Yalnızca sana verilen RSS verilerindeki bilgileri kullan.\n2. Haberleri önem, güncellik ve okuyucuya sağlayacağı değer açısından değerlendir.\n3. Aynı konuyu anlatan tekrar haberleri birleştir.\n4. En önemli 5 haberi seç.\n5. Her haber için:\n   - Haber başlığını yaz.\n   - 2-3 cümlelik anlaşılır bir özet hazırla.\n   - Haber kaynağını belirt.\n   - Orijinal haber bağlantısını ekle.\n6. Haberlerde bulunmayan bilgileri uydurma.\n7. Kaynakta yeterli bilgi yoksa tahmin yürütme.\n8. Tarih bilgisi varsa kullan.\n9. Siyasi, ekonomik, teknolojik ve bilimsel haberler arasında dengeli bir dağılım sağlamaya çalış. Ancak kaynaklarda olmayan kategoriler oluşturma.\n\nBülten formatı:\n\n# HAFTALIK HABER BÜLTENİ\n\nGiriş:\nBu haftanın öne çıkan gelişmelerini kısaca tanıt.\n\n## Haftanın Öne Çıkan 5 Haberi\n\nHer haber için:\n- Başlık\n- Kısa özet\n- Kaynak\n- Haber bağlantısı\n\n## Haftanın Genel Değerlendirmesi\n\nHaberlerdeki ortak gelişmeleri 2-3 cümleyle değerlendir.\n\nÇıktıyı profesyonel, anlaşılır ve e-posta gönderimine uygun Türkçe ile hazırla.\n\nYalnızca bülten metnini döndür. Açıklama veya çalışma sürecini ekleme.\n\n## HTML E-POSTA TASARIM KURALLARI\n\nÇıktıyı Markdown olarak değil, doğrudan HTML formatında oluştur.\n\nTasarım gereksinimleri:\n\n1. E-posta profesyonel, modern ve okunabilir olmalı.\n2. Ana arka plan rengi açık gri (#f4f6f8) olmalı.\n3. Bülten içeriği beyaz bir container içerisinde yer almalı.\n4. Ana başlık koyu lacivert (#17324d) ve büyük puntolu olmalı.\n5. Haberler birbirinden ayrılmış kartlar şeklinde gösterilmeli.\n6. Her haber kartında:\n   - Haber başlığı koyu ve belirgin olmalı.\n   - Özet normal yazı tipinde olmalı.\n   - Kaynak bilgisi küçük ve gri renkte olmalı.\n   - Habere Git şeklinde tıklanabilir bir bağlantı bulunmalı.\n7. Bölümler arasında yeterli boşluk bırak.\n8. Yazı tipi Arial veya sans-serif olmalı.\n9. HTML içerisinde tüm CSS stillerini inline olarak tanımla. Harici CSS veya JavaScript kullanma.\n10. E-posta istemcileriyle uyumlu basit HTML kullan. Flexbox ve Grid kullanma.\n11. Mobil cihazlarda da okunabilir bir tasarım oluştur.\n12. Haber bağlantılarını mutlaka gerçek URL olarak HTML a etiketi içerisinde kullan.\n13. HTML çıktısının dışında hiçbir açıklama yazma.\n14. Markdown işaretleri (#, **, -) kullanma.\n15. Markdown kod bloğu (```html) kullanma.\n\nHTML çıktısını doğrudan Gmail node'una gönderilebilecek şekilde üret."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        368,
+        -32
+      ],
+      "id": "e20bd6c8-c84e-4d1f-863a-1996a389b00a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {
+          "maxTokensToSample": 4096,
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        368,
+        192
+      ],
+      "id": "ce50c2db-35db-4faf-a32e-db6635debb4c",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "iremdev22@gmail.com",
+        "subject": "Haftalık Haber Bülteni",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -32
+      ],
+      "id": "e7df83db-67b0-4258-b6c1-6f14a3a2acd0",
+      "name": "Send a message",
+      "webhookId": "8b265cdb-c70a-4a8c-a846-641af56a38c0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "articles",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -32
+      ],
+      "id": "7c19868d-804a-49ec-9887-138b2f72e6cd",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Europe/Istanbul",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

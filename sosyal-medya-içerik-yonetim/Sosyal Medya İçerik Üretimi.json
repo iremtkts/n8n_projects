@@ -1,0 +1,374 @@
+{
+  "name": "Sosyal Medya İçerik Üretimi",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 13
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -464,
+        -112
+      ],
+      "id": "5dcfac34-3f0d-429d-ac00-87c4b796424d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Aşağıdaki araştırma notlarından bir LinkedIn paylaşımı yaz.\n\nAraştırma notları: {{ $json.message }}\n\nKurallar:\n- Türkçe, samimi ama profesyonel bir dil.\n- İlk cümle dikkat çeken bir giriş olsun.\n- 800-1200 karakter, kısa paragraflar.\n- Sadece araştırma notlarındaki bilgilere dayan, olmayan rakam ya da iddia uydurma.\n- Sonda 3-5 hashtag ve varsa tek bir kaynak bağlantısı olsun.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Sen bir sosyal medya uzmanısın."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        -112
+      ],
+      "id": "2babe241-2a15-4b0b-aaeb-9a152ac00d2f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "messages": {
+          "message": [
+            {
+              "content": "=Şu konu hakkında kısa bir araştırma yap: {{ $json.data.text }}"
+            },
+            {
+              "content": "Türkçe cevap ver. Kaynak bağlantılarını koru.",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -112
+      ],
+      "id": "a5eee253-7dd3-4ca8-9acc-4c4fb247b793",
+      "name": "Message a model",
+      "credentials": {
+        "perplexityApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "[REDACTED]",
+        "message": "Bugün hangi konuda paylaşım yapalım?",
+        "responseType": "freeText",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        -112
+      ],
+      "id": "e38523f6-3634-4b41-8b04-ea77b8fdd21a",
+      "name": "Send message and wait for response",
+      "webhookId": "759946f6-b56b-4598-8e07-fa62d7e33e53",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "[REDACTED]",
+        "message": "=  📝 Taslak: \n\n{{ $json.output.state + '\\n\\n' + $json.output.cities.join('\\n\\n') }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        -112
+      ],
+      "id": "311a5a16-1f74-4118-b89f-4f83be52b9e5",
+      "name": "Send message and wait for response1",
+      "webhookId": "324eb832-d2d1-4b4b-a00f-68ce0ba42920",
+      "credentials": {
+        "telegramApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0260b152-bf89-4d29-8338-a08296e2b3f8",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        -112
+      ],
+      "id": "beefb139-4bbc-4e7e-a97c-0e477c594983",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        128
+      ],
+      "id": "a52de54c-6fda-4a98-95b5-bb7a4fe6181d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        128
+      ],
+      "id": "b1f6d6bd-19df-4181-baa6-237ee2afcf74",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/userinfo",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        992,
+        -160
+      ],
+      "id": "4ca5e4e2-abcc-46f6-a11c-3e612b4e9fb5",
+      "name": "HTTP Request",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "Application/json"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"author\": \"urn:li:person:{{ $('HTTP Request').item.json.sub }}\",\n  \"lifecycleState\": \"PUBLISHED\",\n  \"specificContent\": {\n    \"com.linkedin.ugc.ShareContent\": {\n      \"shareCommentary\": {\n        \"text\": {{ JSON.stringify($('AI Agent').item.json.output.state + '\\n\\n' + $('AI Agent').item.json.output.cities.join('\\n\\n')) }}\n      },\n      \"shareMediaCategory\": \"NONE\"\n    }\n  },\n  \"visibility\": {\n    \"com.linkedin.ugc.MemberNetworkVisibility\": \"PUBLIC\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        -160
+      ],
+      "id": "0310f6c7-9351-4369-a10d-ba4411211395",
+      "name": "HTTP Request1",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

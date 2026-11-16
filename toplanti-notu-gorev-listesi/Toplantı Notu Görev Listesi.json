@@ -1,0 +1,449 @@
+{
+  "name": "Toplantı Notu Görev Listesi",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Toplantı Notları Yükleme",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "toplanti notları",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": true,
+          "useWorkflowTimezone": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -352,
+        -48
+      ],
+      "id": "d2752326-9e62-417c-b72d-7e89746a1318",
+      "name": "On form submission",
+      "webhookId": "0997cda7-cf0d-4cb8-828b-9130a1408e2d"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "toplanti_notlar_",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        -48
+      ],
+      "id": "1e1a714d-fc86-433d-bbac-9a6e0b818ab1",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7a43b564-7fa8-4664-9b5b-0f52646c3abe",
+              "name": "toplanti_metni",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4383c68f-db68-4d54-8572-aaacf13ae8a0",
+              "name": "yuklenme_tarihi",
+              "value": "={{ $('On form submission').item.json.submittedAt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        -48
+      ],
+      "id": "9470627a-ac9e-44fb-8d99-f3ae077eedde",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "[REDACTED]",
+          "mode": "list",
+          "cachedResultName": "[not included]",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "[REDACTED]",
+          "mode": "list",
+          "cachedResultName": "[not included]",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        288,
+        -48
+      ],
+      "id": "ab8153e0-55ac-4c92-81a4-7a1d61fa5189",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -48
+      ],
+      "id": "19b15668-6ba9-4132-a504-ebe2638e679f",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Aşağıdaki toplantı notundan görevleri çıkar.\n\nBugünün (toplantının yüklendiği) tarihi: {{ $('Edit Fields').first().json.yuklenme_tarihi }}\n\nÇalışanlar (yalnızca bu listedeki kişilere atama yapabilirsin):\n{{ JSON.stringify($json.data) }}\n\nToplantı notu:\n{{ $('Edit Fields').first().json.toplanti_metni }}\n\nKurallar:\n- Her görev için görev açıklaması, sorumlu e-postası ve son tarih ver.\n- Sorumlu kişiyi sadece çalışan listesinden seç. Listede eşleşme yoksa veya notta sorumlu belirtilmemişse sorumlu_email alanına \"EKSİK\" yaz. Tahmin yürütme.\n- Notta tarih yoksa tarih alanına \"EKSİK\" yaz. Göreli tarihleri (yarın, gelecek Cuma) yukarıdaki tarihe göre YYYY-MM-DD formatına çevir.\n- \"Görev Title\" bilgisini, görevin hangi kişiye uygun olduğunu anlamak için kullan ama notta açıkça kimse belirtilmemişse atama yapma.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Sen bir toplantı analiz asistanısın. Verilen metinden görevleri eksiksiz ve kurallara uygun şekilde ayıklarsın."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        688,
+        -48
+      ],
+      "id": "da1e02ef-50ff-4699-b2af-42f501d7e474",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"gorevler\": [\n    {\n      \"gorev\": \"Sunum hazırlanacak\",\n      \"sorumlu_email\": \"ali@firma.com\",\n      \"tarih\": \"2026-11-13\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        160
+      ],
+      "id": "4b6b2171-ee27-4b30-8bac-fd8cfc26af82",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        160
+      ],
+      "id": "54824131-c2ae-4902-bd6c-aef5d1a5137e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.gorevler",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -48
+      ],
+      "id": "c1fbec9c-b9a9-4296-95ff-883989c89c67",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "listId": "[REDACTED]",
+        "name": "={{ $json['output.gorevler'].gorev }}",
+        "description": "=  Sorumlu: {{ $json['output.gorevler'].sorumlu_email }}   Son tarih: {{ $json['output.gorevler'].tarih }}   Toplantı notundan otomatik oluşturuldu.",
+        "additionalFields": {
+          "due": "={{ new Date($json['output.gorevler'].tarih + 'T12:00:00Z').toISOString() }}",
+          "idMembers": "[REDACTED]",
+          "idLabels": "[REDACTED]"
+        }
+      },
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        -160
+      ],
+      "id": "2aa629bf-4309-47b9-ad6e-5c9e6f2d182c",
+      "name": "Create a card",
+      "credentials": {
+        "trelloApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "297ab6f3-7205-4a2d-85db-dc85a34b5704",
+              "leftValue": "={{ $json['output.gorevler'].sorumlu_email }}",
+              "rightValue": "EKSİK",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "6881d38b-13a9-4393-884c-3de2bdfe283f",
+              "leftValue": "={{ $json['output.gorevler'].tarih }}",
+              "rightValue": "EKSİK",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1248,
+        -48
+      ],
+      "id": "fd708d95-55f1-49e6-8f0b-1ba656a2ad2e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "listId": "[REDACTED]",
+        "name": "={{ $json['output.gorevler'].gorev }}",
+        "description": "=Sorumlu: {{ $json['output.gorevler'].sorumlu_email }}\nTarih: {{ $json['output.gorevler'].tarih }}\n⚠ Eksik bilgi: {{ [$json['output.gorevler'].sorumlu_email === 'EKSİK' ? 'sorumlu' : null, !/^\\d{4}-\\d{2}-\\d{2}$/.test($json['output.gorevler'].tarih) ? 'tarih' : null].filter(Boolean).join(' ve ') }}. Manager tarafından tamamlanmalı.",
+        "additionalFields": {
+          "due": "={{ /^\\d{4}-\\d{2}-\\d{2}$/.test($json['output.gorevler'].tarih) ? $json['output.gorevler'].tarih + 'T12:00:00.000Z' : '' }}",
+          "idMembers": "[REDACTED]",
+          "idLabels": "[REDACTED]"
+        }
+      },
+      "type": "n8n-nodes-base.trello",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        80
+      ],
+      "id": "2229c6e3-1215-4fce-bee4-8664bef9fdb3",
+      "name": "Create a card1",
+      "credentials": {
+        "trelloApi": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=  {{ $('If').item.json['output.gorevler'].sorumlu_email }}",
+        "subject": "=  Yeni görev atandı: {{ $('If').item.json['output.gorevler'].gorev }}",
+        "message": "=<div style=\"background:#f4f6f8;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;\">\n  <table align=\"center\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e3e8ee;\">\n\n    <tr>\n      <td style=\"background:#2e7d5b;padding:20px 28px;\">\n        <div style=\"color:#d7f0e2;font-size:12px;letter-spacing:1px;text-transform:uppercase;\">Toplantı görevi</div>\n        <div style=\"color:#ffffff;font-size:20px;font-weight:bold;margin-top:4px;\">Sana yeni bir görev atandı</div>\n      </td>\n    </tr>\n\n    <tr>\n      <td style=\"padding:28px;color:#2b2f36;font-size:15px;line-height:1.6;\">\n        <p style=\"margin:0 0 16px 0;\">\n          Merhaba {{ $('Get row(s) in sheet').all().find(r => String(r.json['E-posta']).trim().toLowerCase() === String($('If').item.json['output.gorevler'].sorumlu_email).trim().toLowerCase())?.json['Ad Soyad'] || '' }},\n        </p>\n        <p style=\"margin:0 0 20px 0;\">Son toplantının notlarından aşağıdaki görev sana atandı:</p>\n\n        <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f4f9f6;border-left:4px solid #2e7d5b;border-radius:6px;\">\n          <tr>\n            <td style=\"padding:16px 18px;\">\n              <div style=\"font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;\">Görev</div>\n              <div style=\"font-size:16px;font-weight:bold;color:#1f2933;margin-top:4px;\">\n                {{ $('If').item.json['output.gorevler'].gorev }}\n              </div>\n\n              <div style=\"font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-top:14px;\">Son tarih</div>\n              <div style=\"font-size:16px;font-weight:bold;color:#1f2933;margin-top:4px;\">\n                {{ DateTime.fromISO($('If').item.json['output.gorevler'].tarih).toFormat('dd.MM.yyyy') }}\n              </div>\n            </td>\n          </tr>\n        </table>\n\n        <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin:26px 0 8px 0;\">\n          <tr>\n            <td style=\"background:#2e7d5b;border-radius:8px;\">\n              <a href=\"{{ $json.url }}\" style=\"display:inline-block;padding:12px 24px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;\">\n                Trello kartını aç\n              </a>\n            </td>\n          </tr>\n        </table>\n\n        <p style=\"margin:20px 0 0 0;color:#6b7280;font-size:13px;\">Kolay gelsin.</p>\n      </td>\n    </tr>\n\n    <tr>\n      <td style=\"background:#f4f6f8;padding:14px 28px;color:#9aa3af;font-size:12px;text-align:center;\">\n        Bu mesaj toplantı notlarından otomatik oluşturuldu.\n      </td>\n    </tr>\n\n  </table>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1648,
+        -160
+      ],
+      "id": "83b031a6-f937-4022-bb61-1c9227d0d537",
+      "name": "Send a message",
+      "webhookId": "605de54d-f652-4312-99f7-e8e47fd0f235",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "[REDACTED]",
+          "name": "[credential not included]"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Create a card",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a card1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a card": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
